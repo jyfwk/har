@@ -1,0 +1,35 @@
+import numpy as np
+from scipy.linalg import eigh_tridiagonal as tridiag
+import matplotlib.pyplot as plt
+def v_r(r):
+    return d*(np.exp(-2*a*r) - 2*np.exp(-a*r))
+a = 1.94   # angstrom^-1
+d = 4.75  # eV
+re = 0.74  # angstrom
+hcut = 1973.27 #ev*angstrom/c
+m = (940/2) * 10**6  # eV/c²
+N = 2000
+r = np.linspace(0, 2.5, N) - re
+h = r[1] - r[0]
+v = v_r(r)
+main = np.full(N, hcut**2/(m*(h**2))) + v
+off  = np.full(N-1, -hcut**2/(2*m*(h**2)))
+eigvals, eigvecs = tridiag(main, off)
+e = eigvals
+n_states = [0, 1, 2, 8]
+for j in n_states:
+    print(f"state n={j} Energy: {e[j]}")
+for i in n_states:
+    y = eigvecs[:, i]
+    y /= np.sqrt(np.trapezoid(y**2, r))
+    plt.figure(figsize=(5,5))
+    plt.plot(r+re, y**2 + e[i], label=f"n={i}")
+    plt.plot(r+re, v, label="V(r)")
+    plt.axhline(0, color='black', lw=0.5, ls='-')
+    plt.axvline(0, color='black', lw=1.0, ls='-')
+    plt.axhline(np.min(v) + d, color='black', lw=1.0, ls='-')
+    plt.axvline(re, color='black', label='re', lw=1.0, ls='--')
+    plt.ylim(np.min(v)-1, 20)
+    plt.legend()
+    plt.grid()
+    plt.show()
