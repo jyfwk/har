@@ -1,0 +1,37 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.linalg import eigh
+hbar = 1
+m = 1
+L = float(input("Width of the well (L): "))
+N = int(input("Number of spatial steps (N): "))
+n = int(input("Number of states to compute (n): "))
+x = np.linspace(0, L, N+2)
+dx = x[1] - x[0]
+H = np.zeros((N, N))
+for i in range(N):
+    H[i, i] = 2.0
+    if i > 0:
+        H[i, i - 1] = -1.0
+    if i < N - 1:
+        H[i, i + 1] = -1.0
+H = (hbar**2) / (2 * m * dx**2) * H
+E_num, psi_num = eigh(H)
+for i in range(n):
+    psi_full = np.zeros(N+2)
+    psi_full[1:-1] = psi_num[:, i]
+    if psi_full[1] < 0:
+        psi_full = -psi_full
+    norm = np.sqrt(np.trapz(psi_full**2, x))
+    psi_full = psi_full / norm
+    psi_analytic = np.sqrt(2 / L) * np.sin((i + 1) * np.pi * x / L)
+    E_analytic = ((i + 1)**2 * np.pi**2 * hbar**2) / (2 * m * L**2)
+    plt.figure(figsize=(8, 4))
+    plt.plot(x, psi_full, 'r', linewidth=2, label=f'Numerical ψ({i+1}), E={E_num[i]:.4f}')
+    plt.plot(x, psi_analytic, 'b--', linewidth=2, label=f'Analytical ψ({i+1}), E={E_analytic:.4f}')
+    plt.xlabel("x")
+    plt.ylabel(r"$\psi(x)$")
+    plt.title(f"1D Infinite Potential Well – State {i+1}")
+    plt.grid(True)
+    plt.legend()
+    plt.show()
