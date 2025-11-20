@@ -1,0 +1,41 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import hermite
+from math import factorial
+h = 197.3          # natural units: hbar = 197.3 MeV·fm
+m = 940            # mass in MeV
+k = 100        # MeV/fm^2
+w = np.sqrt(k/m)   # angular frequency
+L = float(input("L: "))
+Npts = int(input("N: "))
+n = int(input("n: "))
+x = np.linspace(-L, L, Npts)
+dx = x[1] - x[0]
+def solve_ho(L, Npts):
+    Vx = 0.5 * m * w**2 * x**2
+    H = np.zeros((Npts, Npts))
+    for i in range(Npts):
+        H[i, i] = 2 + (2*m*dx**2 / h**2) * Vx[i]
+        if i > 0:
+            H[i, i-1] = -1
+        if i < Npts - 1:
+            H[i, i+1] = -1
+    H *= (h**2) / (2*m*dx**2)
+    return x, Vx, *np.linalg.eigh(H)
+x, Vx, Eval, Psi = solve_ho(L, Npts)
+Ecal = [(i + 0.5)*h*w for i in range(n)]
+a = np.sqrt(m*w / h)
+for j in range(n):
+    psi_num = Psi[:, j] / np.sqrt(np.trapz(Psi[:, j]**2, x))
+    pref = (a/np.pi)**0.25
+    norm = np.sqrt(2**j * factorial(j))
+    Hn = hermite(j)(a*x)
+    expt = np.exp(-0.5 * (a*x)**2)   # FIXED
+    psi_ana = pref * Hn * expt / norm
+    psi_ana /= np.sqrt(np.trapz(psi_ana**2, x))
+    plt.plot(x, psi_num**2, label=f"Numerical n={j}, E={Eval[j]:.4f}")
+    plt.plot(x, psi_ana**2, 'r--', label=f"Analytic n={j}, E={Ecal[j]:.4f}")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
