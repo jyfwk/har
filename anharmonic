@@ -1,0 +1,50 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import hermite
+from math import factorial
+m0 = 940.0       # MeV/c^2
+hbar = 197.3     # MeV·fm
+k = 100.0  # MeV/fm^2
+w= np.sqrt(k / m0)      # MeV/fm^2
+Lx = float(input("Enter L: "))
+Npts = int(input("Enter number of steps: "))
+n = int(input("Enter number of states: "))
+x = np.linspace(-Lx, Lx, Npts)
+dx = x[1] - x[0]
+def solve_anharmonic(b):
+    Vx = 0.5 * k * x**2 + (1/3) * b * x**3
+    coef = hbar**2 / (2 * m0 * dx**2)
+    H = np.zeros((Npts, Npts))
+    for i in range(Npts):
+        H[i, i] = 2 * coef + Vx[i]
+        if i > 0:
+            H[i, i - 1] = -coef
+        if i < Npts - 1:
+            H[i, i + 1] = -coef
+    H[0, 0] = H[-1, -1] = 1e10
+    return Vx, *np.linalg.eigh(H)
+def psi_harmonic(j):
+    a = np.sqrt(m0 * w / hbar)
+    Hj = hermite(j)(a * x)
+    prefactor = (a / np.pi)**0.25
+    norm = np.sqrt(2**j * factorial(j))
+    ψt = prefactor / norm * Hj * np.exp(-0.5 * (a * x)**2)
+    ψt /= np.sqrt(np.trapz(ψt**2, x))
+    return ψt
+b_list = [0, 10, 30]
+for j in range(n):
+    plt.figure(figsize=(10, 5))
+    for b in b_list:
+        Vx, Evals, Psi = solve_anharmonic(b)
+        ψ = Psi[:, j]
+        ψ /= np.sqrt(np.trapz(ψ**2, x))
+        plt.plot(x, ψ**2, label=f"b={b}, n={j}, E={Evals[j]:.3f} MeV")
+    ψ_ho = psi_harmonic(j)
+    plt.plot(x, ψ_ho**2, 'k--', label=f'Harmonic n={j}')
+    plt.title(f"Anharmonic Oscillator | Probability Density (n={j})")
+    plt.xlabel("x (fm)")
+    plt.ylabel("|ψ(x)|²")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
