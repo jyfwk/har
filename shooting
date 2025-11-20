@@ -1,0 +1,81 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+def rk4_step(x, y, h, k):
+    k1 = k(x, y)
+    k2 = k(x + h/2, y + h/2 * k1)
+    k3 = k(x + h/2, y + h/2 * k2)
+    k4 = k(x + h, y + h * k3)
+    return y + (h / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+def integrate(f, slope, t, store=False):
+    xs = [0]
+    ys = [0]
+    y = [0, slope]
+    h = t / 100
+    for i in range(100):
+        def ode(x, Y):
+            return np.array([Y[1], f(x, Y[0])])
+        y = rk4_step(xs[-1], y, h, ode)
+        xs.append(xs[-1] + h)
+        ys.append(y[0])
+    if store:
+        return np.array(xs), np.array(ys)
+    else:
+        return np.array(ys[-1])
+states = [1,2,3]
+kn = [ [3, 3.14, 3.5],
+       [6.0, 6.28, 8.0],
+       [9.0, 9.42, 9.81] ]
+slopes = [ [1.0, 3.0, 6],
+           [1.0, 6.0, 12],
+           [1.0, 10,20] ]
+L = 1
+hbar = 1.0     # <-- added (dimensionless box)
+m = 1.0        # <-- added (to keep E = k^2 / 2)
+for i in range(len(states)):
+    plt.figure(figsize=(5,4))
+    for k in kn[i]:
+        E = (hbar**2 * k**2) / (2*m)        # <-- added
+        print(f"State n={states[i]}, k={k:.3f},  Energy E={E:.4f}")   # <-- added
+        def f(x, y): 
+            return -k**2 * y
+        xs, ys = integrate(f, slope=1.0, t=L, store=True)
+        ys = ys / np.sqrt(np.trapz(ys**2, xs))
+        plt.plot(xs, ys, label=f"k = {k:.2f}, E={E:.2f}")
+    xs = np.linspace(0, L, 500)
+    ys_analytic = np.sqrt(2/L) * np.sin(states[i]*math.pi*xs/L)
+    plt.plot(xs, ys_analytic,'k--', lw=2, label=f"Analytic n={states[i]}")
+    plt.axhline(0, color='k', lw=0.7)
+    plt.legend()
+    plt.xlabel("x")
+    plt.ylabel("ψ(x)")
+    plt.title(f"Numerical vs Analytical Wavefunction (n={states[i]})")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+kan = [3.14,6.28,9.42]
+for j in range(len(states)):
+    plt.figure(figsize=(5,4))
+    for s in slopes[j]:
+        k_fixed = states[j]*math.pi/L
+        E = (hbar**2 * k_fixed**2) / (2*m)   # <-- added
+        print(f"State n={states[j]}, slope={s}, Energy E={E:.4f}")   # <-- added
+        def f(x, y): 
+            return -(states[j]*math.pi/L)**2 * y
+        xs, ys = integrate(f, slope=s, t=L, store=True)
+        if s == 1.0:
+            ys = ys / np.sqrt(np.trapz(ys**2, xs))
+            label = f"slope={s} (normalized)"
+        else:
+            label = f"slope={s} (raw)"
+        plt.plot(xs, ys, alpha=0.7, label=f"k={kan[j]:.2f}, E={E:.2f}, {label}")
+    xs = np.linspace(0, L, 500)
+    ys_analytic = np.sqrt(2/L) * np.sin(states[j]*math.pi*xs/L)
+    plt.plot(xs, ys_analytic,'k--', lw=2, label=f"Analytic n={states[j]}")
+    plt.axhline(0, color='k', lw=0.7)
+    plt.legend()
+    plt.xlabel("x")
+    plt.ylabel("ψ(x)")
+    plt.title(f"Effect of Initial Slope (n={states[j]})")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+plt.show()
